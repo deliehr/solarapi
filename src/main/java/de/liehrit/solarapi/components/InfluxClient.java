@@ -1,10 +1,8 @@
-package de.liehrit.solarapi.services;
+package de.liehrit.solarapi.components;
 
 import com.google.gson.Gson;
 import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
-import de.liehrit.solarapi.model.LogMessage;
 import de.liehrit.solarapi.model.WattMessage;
 import jakarta.annotation.PreDestroy;
 import lombok.val;

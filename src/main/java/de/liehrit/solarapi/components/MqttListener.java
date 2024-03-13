@@ -1,4 +1,4 @@
-package de.liehrit.solarapi.services;
+package de.liehrit.solarapi.components;
 
 import jakarta.annotation.PreDestroy;
 import lombok.val;

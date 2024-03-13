@@ -42,6 +42,5 @@ public class SolarapiApplication {
 		for(Object element:arr) {
 			log.debug("{}", element);
 		}
-
 	}
 }
