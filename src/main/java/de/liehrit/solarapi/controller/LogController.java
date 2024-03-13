@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/log", consumes = "application/json", produces = "application/json")
+@RequestMapping(path = "/log", produces = "application/json")
 public class LogController {
     private final LogRepository logRepository;
 
