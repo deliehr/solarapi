@@ -92,8 +92,11 @@ public class MqttListener implements MqttCallback {
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         val messageContent = new String(message.getPayload());
+        val logMessage = (message.isRetained() ? "received retained message: " : "received message: ") + messageContent;
 
-        logger.debug("received message: " + messageContent);
+        logger.debug(logMessage);
+
+        if(message.isRetained()) return;
 
         influxClient.saveInInflux(messageContent);
     }

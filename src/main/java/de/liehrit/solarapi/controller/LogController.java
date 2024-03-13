@@ -1,7 +1,7 @@
 package de.liehrit.solarapi.controller;
 
 import de.liehrit.solarapi.model.LogMessage;
-import de.liehrit.solarapi.repositories.MyRepository;
+import de.liehrit.solarapi.repositories.LogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -12,10 +12,10 @@ import java.util.List;
 @RequestMapping(path = "/log", produces = "application/json")
 public class LogController {
     @Autowired
-    private MyRepository myRepository;
+    private LogRepository logRepository;
 
     @RequestMapping(value = "/all", method = RequestMethod.GET)
     public List<LogMessage> getAllLogs() {
-        return myRepository.findAll();
+        return logRepository.findAll();
     }
 }
