@@ -3,6 +3,7 @@ package de.liehrit.solarapi.components;
 import com.google.gson.Gson;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.write.Point;
+import de.liehrit.solarapi.SolarapiApplication;
 import de.liehrit.solarapi.model.WattMessage;
 import jakarta.annotation.PreDestroy;
 import lombok.val;
@@ -17,7 +18,6 @@ import java.util.Optional;
 @Component
 @DependsOn("influxDBClientConfiguration")
 public class InfluxClient {
-    public static final Gson gson = new Gson();
     private final InfluxDBClient influxDBClient;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -31,8 +31,7 @@ public class InfluxClient {
         if(!influxDBClient.ping()) return;
 
         try {
-            WattMessage logMessage = gson.fromJson(jsonMessageContent, WattMessage.class);
-
+            val logMessage = SolarapiApplication.gson.fromJson(jsonMessageContent, WattMessage.class);
             val point = getPointForTemperatureLog(logMessage);
 
             if(point != null) {

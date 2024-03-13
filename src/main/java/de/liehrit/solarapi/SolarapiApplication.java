@@ -1,5 +1,6 @@
 package de.liehrit.solarapi;
 
+import com.google.gson.Gson;
 import jakarta.annotation.PostConstruct;
 import lombok.val;
 import org.slf4j.Logger;
@@ -20,12 +21,21 @@ import java.util.stream.StreamSupport;
 @SpringBootApplication
 public class SolarapiApplication {
 	private static final Logger log = LoggerFactory.getLogger(SolarapiApplication.class);
+	public static final Gson gson = new Gson();
 
 	@Autowired
 	AbstractEnvironment abstractEnvironment;
 
 	public static void main(String[] args) {
-		SpringApplication.run(SolarapiApplication.class, args);
+		val context = SpringApplication.run(SolarapiApplication.class, args);
+
+		log.debug("Beans:");
+
+		for(String bean:context.getBeanDefinitionNames()) {
+			log.info("Bean: {}", bean);
+		}
+
+		log.debug("");
 	}
 
 	@PostConstruct
@@ -38,10 +48,12 @@ public class SolarapiApplication {
 				.sorted()
 				.toArray();
 
-		log.debug("");
+		log.debug("Environment variables:");
 
 		for(Object element:arr) {
 			log.debug("{}", element);
 		}
+
+		log.debug("");
 	}
 }

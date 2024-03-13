@@ -1,6 +1,12 @@
 package de.liehrit.solarapi.components;
 
+import com.google.gson.JsonSyntaxException;
+import de.liehrit.solarapi.SolarapiApplication;
+import de.liehrit.solarapi.model.LogMessage;
+import de.liehrit.solarapi.model.WattMessage;
+import de.liehrit.solarapi.repositories.LogRepository;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.java.Log;
 import lombok.val;
 import org.eclipse.paho.mqttv5.client.*;
 import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
@@ -12,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
 import java.util.UUID;
 
 @Component
@@ -21,8 +28,11 @@ public class MqttListener implements MqttCallback {
     private MqttAsyncClient client;
     private final Logger logger = LoggerFactory.getLogger(MqttListener.class);
 
-    public MqttListener(Environment environment, InfluxClient influxClient) throws Exception {
+    private final LogRepository logRepository;
+
+    public MqttListener(Environment environment, InfluxClient influxClient, LogRepository logRepository) throws Exception {
         this.influxClient = influxClient;
+        this.logRepository = logRepository;
 
         String mqttHost = environment.getRequiredProperty("MQTT.HOST");
         String mqttUsername = environment.getRequiredProperty("MQTT.USERNAME");
@@ -90,15 +100,19 @@ public class MqttListener implements MqttCallback {
     }
 
     @Override
-    public void messageArrived(String topic, MqttMessage message) throws Exception {
+    public void messageArrived(String topic, MqttMessage message) {
         val messageContent = new String(message.getPayload());
-        val logMessage = (message.isRetained() ? "received retained message: " : "received message: ") + messageContent;
-
-        logger.debug(logMessage);
 
         if(message.isRetained()) return;
 
-        influxClient.saveInInflux(messageContent);
+        try {
+            val timestamp = org.joda.time.DateTime.now().toString("yyyy-MM-dd'T'HH:mm:ss.SSSZZ", Locale.GERMANY);
+            val logMessage = LogMessage.builder().topic(topic).value(messageContent).timestamp(timestamp).build();
+
+            logRepository.insert(logMessage);
+        } catch (JsonSyntaxException e) {
+            logger.error(e.getLocalizedMessage());
+        }
     }
 
     @Override

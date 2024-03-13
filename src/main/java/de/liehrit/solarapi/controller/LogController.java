@@ -2,19 +2,24 @@ package de.liehrit.solarapi.controller;
 
 import de.liehrit.solarapi.model.LogMessage;
 import de.liehrit.solarapi.repositories.LogRepository;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/log", produces = "application/json")
+@RequestMapping(path = "/log", consumes = "application/json", produces = "application/json")
 public class LogController {
-    @Autowired
-    private LogRepository logRepository;
+    private final LogRepository logRepository;
 
-    @RequestMapping(value = "/all", method = RequestMethod.GET)
+    public LogController(LogRepository logRepository) {
+        this.logRepository = logRepository;
+    }
+
+    @GetMapping("/all")
     public List<LogMessage> getAllLogs() {
         return logRepository.findAll();
     }
