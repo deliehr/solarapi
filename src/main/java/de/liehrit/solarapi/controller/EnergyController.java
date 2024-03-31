@@ -1,9 +1,7 @@
 package de.liehrit.solarapi.controller;
 
 import de.liehrit.solarapi.components.InfluxClient;
-import de.liehrit.solarapi.model.GeneralRecord;
 import de.liehrit.solarapi.model.Pair;
-import de.liehrit.solarapi.model.TotalRecord;
 import lombok.val;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.sql.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
