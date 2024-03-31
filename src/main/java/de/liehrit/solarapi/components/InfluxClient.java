@@ -10,17 +10,21 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
 @DependsOn("influxDBClientConfiguration")
 public class InfluxClient {
+    private final String BUCKET;
     private final InfluxDBClient influxDBClient;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public InfluxClient(InfluxDBClient influxDBClient) {
+    public InfluxClient(InfluxDBClient influxDBClient, Environment environment) {
         this.influxDBClient = influxDBClient;
+
+        BUCKET = environment.getRequiredProperty("INFLUXDB.BUCKET");
     }
 
     public void savePoint(Point point) throws InfluxException {
@@ -37,9 +41,9 @@ public class InfluxClient {
         }
 
         val api = influxDBClient.getQueryApi();
-        val query =
+        val fromLine = String.format("from(bucket: \"%s\")\n", BUCKET);
+        val query = fromLine +
         """
-         from(bucket: "solar3")
          |> range(start: -10h)
          |> filter(fn: (r) => r["_measurement"] == "total")
         """;
