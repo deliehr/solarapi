@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class WattMessage {
-    private String timestamp;
-
+public class FieldConfiguration {
+    String fieldName;
+    Object fieldValue;
 }

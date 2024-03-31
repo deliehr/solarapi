@@ -1,29 +1,34 @@
 package de.liehrit.solarapi.components;
 
 import com.google.gson.JsonSyntaxException;
-import de.liehrit.solarapi.SolarapiApplication;
+import com.influxdb.client.domain.WritePrecision;
+import com.influxdb.client.write.Point;
+import com.influxdb.exceptions.InfluxException;
+import de.liehrit.solarapi.model.FieldConfiguration;
 import de.liehrit.solarapi.model.LogMessage;
-import de.liehrit.solarapi.model.WattMessage;
 import de.liehrit.solarapi.repositories.LogRepository;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.java.Log;
 import lombok.val;
 import org.eclipse.paho.mqttv5.client.*;
 import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.TimeZone;
 import java.util.UUID;
 
-@Component
+@Component(value="mycomponent")
 public class MqttListener implements MqttCallback {
-    private final String TOPIC;
+    private final String SUBSCRIPTION_TOPIC;
+    private final String INVERTER;
     final private InfluxClient influxClient;
     private MqttAsyncClient client;
     private final Logger logger = LoggerFactory.getLogger(MqttListener.class);
@@ -38,7 +43,8 @@ public class MqttListener implements MqttCallback {
         String mqttUsername = environment.getRequiredProperty("MQTT.USERNAME");
         String mqttPassword = environment.getRequiredProperty("MQTT.PASSWORD");
         String mqttClientId = environment.getRequiredProperty("MQTT.CLIENTID");
-        TOPIC = environment.getRequiredProperty("MQTT.TOPIC");
+        SUBSCRIPTION_TOPIC = environment.getRequiredProperty("MQTT.TOPIC");
+        INVERTER = environment.getRequiredProperty("SOLAR.INVERTER");
 
         MqttConnectionOptions connectionOptions = new MqttConnectionOptions();
 
@@ -59,10 +65,10 @@ public class MqttListener implements MqttCallback {
 
             logger.info("connected to mqtt");
 
-            IMqttToken subToken = client.subscribe(TOPIC, 0);
+            IMqttToken subToken = client.subscribe(SUBSCRIPTION_TOPIC, 0);
             subToken.waitForCompletion(6000);
 
-            logger.debug("subscribed to mqtt topic: '{}'", TOPIC);
+            logger.debug("subscribed to mqtt topic: '{}'", SUBSCRIPTION_TOPIC);
         } catch(Exception e) {
             logger.error(e.getLocalizedMessage());
         }
@@ -70,10 +76,10 @@ public class MqttListener implements MqttCallback {
 
     public void disconnectAndExit() {
         try {
-            IMqttToken unsubscribeToken = client.unsubscribe(TOPIC);
+            IMqttToken unsubscribeToken = client.unsubscribe(SUBSCRIPTION_TOPIC);
             unsubscribeToken.waitForCompletion(6000);
 
-            logger.info("unsubscribed from mqtt topic '{}'", TOPIC);
+            logger.info("unsubscribed from mqtt topic '{}'", SUBSCRIPTION_TOPIC);
 
             IMqttToken disconnectToken = client.disconnect();
             disconnectToken.waitForCompletion(6000);
@@ -102,16 +108,70 @@ public class MqttListener implements MqttCallback {
     @Override
     public void messageArrived(String topic, MqttMessage message) {
         val messageContent = new String(message.getPayload());
+        val timeZone = TimeZone.getTimeZone("Europe/Berlin");
+        val timestamp = (new LocalDateTime()).toDateTime(DateTimeZone.forTimeZone(timeZone)).getMillis(); // milliseconds
 
-        if(message.isRetained()) return;
+        if(message.isRetained()) {
+            logger.debug("message is retained, do not proceed");
+            return;
+        }
 
         try {
-            val timestamp = org.joda.time.DateTime.now().toString("yyyy-MM-dd'T'HH:mm:ss.SSSZZ", Locale.GERMANY);
             val logMessage = LogMessage.builder().topic(topic).value(messageContent).timestamp(timestamp).build();
-
             logRepository.insert(logMessage);
         } catch (JsonSyntaxException e) {
             logger.error(e.getLocalizedMessage());
+        }
+
+        // influx
+
+        int fieldValue;
+
+        try {
+            fieldValue = Integer.parseInt(messageContent);
+        } catch (NumberFormatException nfe) {
+            logger.debug("cannot parse message content to int");
+            return;
+        }
+
+        Point point = null;
+        val topicParts = topic.split("/");
+
+        if(topicParts.length == 2) {
+            // general information
+            val fieldName = topicParts[1];
+
+            point = new Point("general")
+                    .time(timestamp, WritePrecision.MS)
+                    .addField(fieldName, fieldValue);
+        } else if(topicParts.length == 3) {
+            // total information
+            val fieldName = topicParts[2];
+
+            point = new Point("total")
+                    .time(timestamp, WritePrecision.MS)
+                    .addField(fieldName, fieldValue);
+        } else if(topicParts.length == 4) {
+            // channel specific information
+            val channel = topicParts[2];
+            val fieldName = topicParts[3];
+
+            point = new Point("channels")
+                    .time(timestamp, WritePrecision.MS)
+                    .addField(fieldName, fieldValue)
+                    .addTag("channel", channel);
+        }
+
+        if(point == null) {
+            logger.debug("point is null");
+            return;
+        }
+
+        try {
+            influxClient.savePoint(point);
+        } catch (InfluxException ie) {
+            logger.error(ie.getLocalizedMessage());
+            // log
         }
     }
 
