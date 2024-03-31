@@ -11,7 +11,7 @@ import org.springframework.core.env.Environment;
 @Configuration
 public class InfluxDBClientConfiguration {
     @Bean
-    InfluxDBClient influxDBClient(@NotNull Environment environment) throws Exception {
+    InfluxDBClient influxDBClient(@NotNull Environment environment) {
         String influxDbHost = environment.getRequiredProperty("INFLUXDB.HOST");
         String influxDbToken = environment.getRequiredProperty("INFLUXDB.TOKEN");
         String influxDbOrga = environment.getRequiredProperty("INFLUXDB.ORGA");
