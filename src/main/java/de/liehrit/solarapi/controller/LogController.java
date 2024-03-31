@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/log", produces = "application/json")
+@RequestMapping(path = "/logs", produces = "application/json")
 public class LogController {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final LogRepository logRepository;
@@ -27,7 +27,7 @@ public class LogController {
         this.logRepository = logRepository;
     }
 
-    @GetMapping("/all")
+    @GetMapping("")
     public List<LogMessage> getAllLogs() {
         return logRepository.findAll();
     }
