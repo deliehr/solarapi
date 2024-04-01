@@ -97,17 +97,24 @@ public class MqttListener implements MqttCallback {
 
     @Override
     public void disconnected(MqttDisconnectResponse mqttDisconnectResponse) {
-
+        logger.debug("mqtt disconnected");
     }
 
     @Override
     public void mqttErrorOccurred(MqttException e) {
-
+        logger.error(e.getLocalizedMessage());
     }
 
     @Override
     public void messageArrived(String topic, MqttMessage message) {
+
+        logger.debug("message arrived: {}", message);
+
         val messageContent = new String(message.getPayload());
+
+        logger.debug("messageContent arrived: {}", messageContent);
+
+
         val timeZone = TimeZone.getTimeZone("Europe/Berlin");
         val timestamp = (new LocalDateTime()).toDateTime(DateTimeZone.forTimeZone(timeZone)).getMillis(); // milliseconds
 
