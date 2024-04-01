@@ -7,6 +7,7 @@ import com.influxdb.exceptions.InfluxException;
 import de.liehrit.solarapi.model.FieldConfiguration;
 import de.liehrit.solarapi.model.LogMessage;
 import de.liehrit.solarapi.repositories.LogRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.val;
 import org.eclipse.paho.mqttv5.client.*;
@@ -19,6 +20,10 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -27,12 +32,16 @@ import java.util.TimeZone;
 import java.util.UUID;
 
 @Component(value="mycomponent")
-public class MqttListener implements MqttCallback {
+public class MqttListener implements MqttCallback, ApplicationListener<ApplicationReadyEvent> {
+    private final String MQTT_HOST;
+    private final String MQTT_USERNAME;
+    private final String MQTT_PASSWORD;
+    private final String MQTT_CLIENTID;
     private final String SUBSCRIPTION_TOPIC;
     private final String INVERTER;
     final private InfluxClient influxClient;
     private MqttAsyncClient client;
-    private final Logger logger = LoggerFactory.getLogger(MqttListener.class);
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final LogRepository logRepository;
 
@@ -40,25 +49,32 @@ public class MqttListener implements MqttCallback {
         this.influxClient = influxClient;
         this.logRepository = logRepository;
 
-        String mqttHost = environment.getRequiredProperty("MQTT.HOST");
-        String mqttUsername = environment.getRequiredProperty("MQTT.USERNAME");
-        String mqttPassword = environment.getRequiredProperty("MQTT.PASSWORD");
-        String mqttClientId = environment.getRequiredProperty("MQTT.CLIENTID");
+        MQTT_HOST = environment.getRequiredProperty("MQTT.HOST");
+        MQTT_USERNAME = environment.getRequiredProperty("MQTT.USERNAME");
+        MQTT_PASSWORD = environment.getRequiredProperty("MQTT.PASSWORD");
+        MQTT_CLIENTID = environment.getRequiredProperty("MQTT.CLIENTID");
         SUBSCRIPTION_TOPIC = environment.getRequiredProperty("MQTT.TOPIC");
         INVERTER = environment.getRequiredProperty("SOLAR.INVERTER");
+    }
 
+    @Override
+    public void onApplicationEvent(ApplicationReadyEvent event) {
+        connect();
+    }
+
+    private void connect() {
         MqttConnectionOptions connectionOptions = new MqttConnectionOptions();
 
-        connectionOptions.setServerURIs(new String[] {mqttHost});
-        connectionOptions.setUserName(mqttUsername);
-        connectionOptions.setPassword(mqttPassword.getBytes());
+        connectionOptions.setServerURIs(new String[] {MQTT_HOST});
+        connectionOptions.setUserName(MQTT_USERNAME);
+        connectionOptions.setPassword(MQTT_PASSWORD.getBytes());
         connectionOptions.setAutomaticReconnect(true);
 
         MemoryPersistence persistence = new MemoryPersistence();
 
         try {
             UUID uuid = UUID.randomUUID();
-            client = new MqttAsyncClient(mqttHost, mqttClientId, persistence);
+            client = new MqttAsyncClient(MQTT_HOST, MQTT_CLIENTID, persistence);
             client.setCallback(this);
 
             IMqttToken connectToken = client.connect(connectionOptions);

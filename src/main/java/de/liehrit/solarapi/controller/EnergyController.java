@@ -27,14 +27,14 @@ public class EnergyController {
     }
 
     @GetMapping("/total")
-    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours) {
+    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours, @RequestParam Optional<Integer> aggregateMinutes) {
         List<FluxTable> result = null;
 
         val hoursValue = Math.max(1, Math.abs(hours.orElseGet(() -> 24)));
         val hoursStringValue = String.valueOf(hoursValue);
 
         try {
-            result = influxClient.readTotals(hoursStringValue);
+            result = influxClient.readTotals(hoursStringValue, aggregateMinutes);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 

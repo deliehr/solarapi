@@ -34,7 +34,7 @@ public class InfluxClient {
     }
 
     @Nullable
-    public List<FluxTable> readTotals(String hours) throws Exception {
+    public List<FluxTable> readTotals(String hours, Optional<Integer> aggregateMinutes) throws Exception {
         if(!influxDBClient.ping()) {
             // TODO: log error
             logger.error("influx client did not pong");
@@ -44,7 +44,12 @@ public class InfluxClient {
         val api = influxDBClient.getQueryApi();
         val fromLine = String.format("from(bucket: \"%s\")\n", BUCKET);
         val rangeLine = String.format("|> range(start: -%sh)\n", hours);
-        val query = fromLine + rangeLine + "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")";
+        var query = fromLine + rangeLine + "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n";
+
+        if(aggregateMinutes.isPresent()) {
+            val minutes = Math.min(10, Math.max(1, Math.abs(aggregateMinutes.get())));
+            query += String.format("|> aggregateWindow(every: %dm, fn: mean, createEmpty: false)\n|> yield(name: \"mean\")", minutes);
+        }
 
         val result = api.query(query);
 
