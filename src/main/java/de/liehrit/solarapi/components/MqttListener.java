@@ -14,6 +14,7 @@ import org.eclipse.paho.mqttv5.client.persist.MemoryPersistence;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
@@ -115,8 +116,9 @@ public class MqttListener implements MqttCallback {
         logger.debug("messageContent arrived: {}", messageContent);
 
 
-        val timeZone = TimeZone.getTimeZone("Europe/Berlin");
-        val timestamp = (new LocalDateTime()).toDateTime(DateTimeZone.forTimeZone(timeZone)).getMillis(); // milliseconds
+        //val timeZone = TimeZone.getTimeZone("Europe/Berlin");
+        //val timestamp = (new LocalDateTime()).toDateTime(DateTimeZone.forTimeZone(timeZone)).getMillis();
+        val timestamp = new DateTime().getMillis();
 
         if(message.isRetained()) {
             logger.debug("message is retained, do not proceed");
@@ -176,6 +178,7 @@ public class MqttListener implements MqttCallback {
 
         try {
             influxClient.savePoint(point);
+            logger.debug("point saved");
         } catch (InfluxException ie) {
             logger.error(ie.getLocalizedMessage());
             // log
