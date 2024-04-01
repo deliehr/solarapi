@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN head -20 pom.xml  # print first 20 lines of file
 
-RUN mvn clean install -Dmaven.test.skip
+RUN mvn clean install -Pdev -Dmaven.test.skip
 RUN mvn -DskipTests package
 
 # Stage 2
