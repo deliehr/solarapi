@@ -130,7 +130,7 @@ public class MqttListener implements MqttCallback {
         try {
             fieldValue = Double.parseDouble(messageContent);
         } catch (NumberFormatException nfe) {
-            logger.debug("cannot parse message content to int, value: {}", messageContent);
+            logger.debug("cannot parse message content to double, value: {}", messageContent);
             return;
         }
 
