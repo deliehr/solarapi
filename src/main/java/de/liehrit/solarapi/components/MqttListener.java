@@ -125,10 +125,10 @@ public class MqttListener implements MqttCallback {
 
         // influx
 
-        int fieldValue;
+        double fieldValue;
 
         try {
-            fieldValue = Integer.parseInt(messageContent);
+            fieldValue = Double.parseDouble(messageContent);
         } catch (NumberFormatException nfe) {
             logger.debug("cannot parse message content to int, value: {}", messageContent);
             return;

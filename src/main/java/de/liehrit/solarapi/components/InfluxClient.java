@@ -52,7 +52,7 @@ public class InfluxClient {
 
         logger.debug("result: {}", result);
 
-        var map = new HashMap<String, List<Pair<Object,Object>>>();
+        val map = new HashMap<String, List<Pair<Object,Object>>>();
 
         for(val table:result) {
             for(val record:table.getRecords()) {
@@ -62,9 +62,9 @@ public class InfluxClient {
                 val value = values.get("_value");
                 val time = values.get("_time");
 
-                var list = map.computeIfAbsent(field, k -> new ArrayList<>());
+                val list = map.computeIfAbsent(field, k -> new ArrayList<>());
 
-                list.add(Pair.builder().key(time).value(value).build());
+                list.add(new Pair<>(time, value));
             }
         }
 
