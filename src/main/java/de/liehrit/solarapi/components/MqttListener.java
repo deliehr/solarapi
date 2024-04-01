@@ -96,8 +96,8 @@ public class MqttListener implements MqttCallback {
     }
 
     @Override
-    public void disconnected(MqttDisconnectResponse mqttDisconnectResponse) {
-        logger.debug("mqtt disconnected");
+    public void disconnected(MqttDisconnectResponse response) {
+        logger.debug("mqtt disconnected. exception: {}, reason: {}, code: {}", response.getException().getLocalizedMessage(), response.getReasonString(), response.getReturnCode());
     }
 
     @Override
