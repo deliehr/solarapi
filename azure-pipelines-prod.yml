@@ -11,7 +11,7 @@ steps:
     displayName: Docker build image and push
     inputs:
       script: |
-        DOCKER_BUILDKIT=0 docker build -f Dockerfile-dev -t registry.d.liehr.dev/solarapi:prod .
+        DOCKER_BUILDKIT=0 docker build -f Dockerfile-prod -t registry.d.liehr.dev/solarapi:prod .
 
   - task: CmdLine@2
     displayName: Docker registry login
