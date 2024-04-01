@@ -34,7 +34,7 @@ public class InfluxClient {
     }
 
     @Nullable
-    public List<FluxTable> readTotals(String hours, Optional<Integer> aggregateMinutes) throws Exception {
+    public List<FluxTable> readTotals(String hours, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) throws Exception {
         if(!influxDBClient.ping()) {
             // TODO: log error
             logger.error("influx client did not pong");
@@ -42,16 +42,46 @@ public class InfluxClient {
         }
 
         val api = influxDBClient.getQueryApi();
+
+        val queryBuilder = new StringBuilder();
+
         val fromLine = String.format("from(bucket: \"%s\")\n", BUCKET);
         val rangeLine = String.format("|> range(start: -%sh)\n", hours);
-        var query = fromLine + rangeLine + "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n";
+        val measurementLine = "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n";
+
+        queryBuilder.append(fromLine);
+        queryBuilder.append(rangeLine);
+        queryBuilder.append(measurementLine);
+
+        if(fieldFilter.isPresent() && !fieldFilter.get().isEmpty()) {
+            val fields = fieldFilter.get().split(",");
+
+            if(fields.length > 0) {
+                val firstField = fields[0].trim();
+
+                queryBuilder.append(String.format("|> filter(fn: (r) => r[\"_field\"] == \"%s\"", firstField));
+
+                if(fields.length > 1) {
+                    for(int i=1;i < fields.length;i++) {
+                        val nextField = fields[i].trim();
+
+                        if(nextField.isEmpty()) continue;
+
+                        queryBuilder.append(String.format(" or r[\"_field\"] == \"%s\"", nextField));
+                    }
+                }
+
+                queryBuilder.append(")\n");
+            }
+        }
 
         if(aggregateMinutes.isPresent()) {
             val minutes = Math.min(10, Math.max(1, Math.abs(aggregateMinutes.get())));
-            query += String.format("|> aggregateWindow(every: %dm, fn: mean, createEmpty: false)\n|> yield(name: \"mean\")", minutes);
+
+            queryBuilder.append(String.format("|> aggregateWindow(every: %dm, fn: mean, createEmpty: false)\n|> yield(name: \"mean\")", minutes));
         }
 
-        val result = api.query(query);
+        val result = api.query(queryBuilder.toString());
 
         logger.debug("result: {}", result);
 
