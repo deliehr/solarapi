@@ -1,5 +1,6 @@
 package de.liehrit.solarapi.components;
 
+import com.influxdb.query.FluxTable;
 import de.liehrit.solarapi.model.Pair;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.write.Point;
@@ -33,7 +34,7 @@ public class InfluxClient {
     }
 
     @Nullable
-    public Map<String, List<Pair<Object,Object>>> readTotals() throws Exception {
+    public List<FluxTable> readTotals() throws Exception {
         if(!influxDBClient.ping()) {
             // TODO: log error
             logger.error("influx client did not pong");
@@ -52,23 +53,7 @@ public class InfluxClient {
 
         logger.debug("result: {}", result);
 
-        val map = new HashMap<String, List<Pair<Object,Object>>>();
-
-        for(val table:result) {
-            for(val record:table.getRecords()) {
-                val values = record.getValues();
-
-                val field = (String)values.get("_field");
-                val value = values.get("_value");
-                val time = values.get("_time");
-
-                val list = map.computeIfAbsent(field, k -> new ArrayList<>());
-
-                list.add(new Pair<>(time, value));
-            }
-        }
-
-        return map;
+        return result;
     }
 
     @PreDestroy

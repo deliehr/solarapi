@@ -1,7 +1,9 @@
 package de.liehrit.solarapi.controller;
 
+import com.influxdb.query.FluxTable;
 import de.liehrit.solarapi.components.InfluxClient;
 import de.liehrit.solarapi.model.Pair;
+import de.liehrit.solarapi.model.TotalResponse;
 import lombok.val;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 @RestController
 @RequestMapping(path = "/energy", produces = "application/json")
@@ -24,17 +26,38 @@ public class EnergyController {
     }
 
     @GetMapping("/total")
-    public Map<String, List<Pair<Object,Object>>> getAllTotalRecords() {
-        try {
-            val read = influxClient.readTotals();
+    public TotalResponse getAllTotalRecords() {
+        List<FluxTable> result = null;
 
-            if(read != null) {
-                return read;
-            }
+        try {
+            result = influxClient.readTotals();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
+
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        val data = new HashMap<String, List<Pair<Object,Object>>>();
+        var rowCount = 0;
+
+        for(val table:result) {
+            for(val record:table.getRecords()) {
+                val values = record.getValues();
+
+                val field = (String)values.get("_field");
+                val value = values.get("_value");
+                val time = values.get("_time");
+
+                val list = data.computeIfAbsent(field, k -> new ArrayList<>());
+
+                list.add(new Pair<>(time, value));
+
+                rowCount++;
+            }
+        }
+
+        return TotalResponse.builder().keys(data.keySet()).rowCount(rowCount).data(data).build();
     }
 }
