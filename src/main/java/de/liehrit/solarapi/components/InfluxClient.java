@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.*;
 
 @Component
@@ -34,7 +36,31 @@ public class InfluxClient {
     }
 
     @Nullable
-    public List<FluxTable> readTotals(String hours, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) throws Exception {
+    public FluxTable readTotalFields() {
+        if(!influxDBClient.ping()) {
+            // TODO: log error
+            logger.error("influx client did not pong");
+            return null;
+        }
+
+        val query = new StringBuilder();
+        query.append("import \"influxdata/influxdb/schema\"\n");
+        query.append(String.format("schema.fieldKeys(bucket: \"%s\", predicate: (r) => r._measurement == \"total\")", BUCKET));
+
+        val api = influxDBClient.getQueryApi();
+        val result = api.query(query.toString());
+
+        logger.debug("result: {}", result);
+
+        if(result.size() == 1) {
+            return result.get(0);
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public List<FluxTable> readTotals(String hours, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
         if(!influxDBClient.ping()) {
             // TODO: log error
             logger.error("influx client did not pong");

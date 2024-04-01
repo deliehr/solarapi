@@ -26,6 +26,27 @@ public class EnergyController {
         this.influxClient = influxClient;
     }
 
+    @GetMapping("/total/fields")
+    public Set<String> getTotalFields() {
+        val result = influxClient.readTotalFields();
+
+        if(result != null) {
+            val fieldNames = new HashSet<String>();
+
+            for(val record:result.getRecords()) {
+                val values = record.getValues();
+
+                val fieldName = (String)values.get("_value");
+
+                fieldNames.add(fieldName);
+            }
+
+            return fieldNames;
+        }
+
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find any field names.");
+    }
+
     @GetMapping("/total")
     public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours, @RequestParam Optional<String> fieldFilter, @RequestParam Optional<Integer> aggregateMinutes) {
         List<FluxTable> result = null;
