@@ -17,13 +17,6 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
-		<!-- https://mvnrepository.com/artifact/org.springframework/spring-web -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>6.1.5</version>
-		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -97,8 +90,8 @@
 			<properties>
 				<springdoc.swagger-ui.path>/swagger-ui.html</springdoc.swagger-ui.path>
 				<springdoc.packagesToScan>de.liehrit.solarapi</springdoc.packagesToScan>
-				<springdoc.api-docs.enabled>false</springdoc.api-docs.enabled>
-				<springdoc.swagger-ui.enabled>false</springdoc.swagger-ui.enabled>
+				<springdoc.api-docs.enabled>true</springdoc.api-docs.enabled>
+				<springdoc.swagger-ui.enabled>true</springdoc.swagger-ui.enabled>
 			</properties>
 			<dependencies>
 				<!-- https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui -->
