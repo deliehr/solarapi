@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,11 +27,14 @@ public class EnergyController {
     }
 
     @GetMapping("/total")
-    public TotalResponse getAllTotalRecords() {
+    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours) {
         List<FluxTable> result = null;
 
+        val hoursValue = Math.max(1, Math.abs(hours.orElseGet(() -> 24)));
+        val hoursStringValue = String.valueOf(hoursValue);
+
         try {
-            result = influxClient.readTotals();
+            result = influxClient.readTotals(hoursStringValue);
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
@@ -58,6 +62,11 @@ public class EnergyController {
             }
         }
 
-        return TotalResponse.builder().keys(data.keySet()).rowCount(rowCount).data(data).build();
+        return TotalResponse.builder()
+                .keys(data.keySet())
+                .requestedHours(hoursValue)
+                .rowCount(rowCount)
+                .data(data)
+                .build();
     }
 }
