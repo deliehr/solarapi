@@ -51,7 +51,11 @@ public class EnergyController {
     }
 
     @GetMapping("/total")
-    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours, @RequestParam Optional<String> fieldFilter, @RequestParam Optional<Integer> aggregateMinutes) {
+    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours,
+                                            @RequestParam Optional<String> fieldFilter,
+                                            @RequestParam Optional<Integer> aggregateMinutes) {
+        // calculate result
+
         List<FluxTable> result = null;
 
         val hoursValue = Math.max(1, Math.abs(hours.orElseGet(() -> 24)));
@@ -66,6 +70,8 @@ public class EnergyController {
         }
 
         if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Influxdb result is null");
+
+        // build response
 
         val data = new HashMap<String, List<Pair>>();
         var rowCount = 0;
