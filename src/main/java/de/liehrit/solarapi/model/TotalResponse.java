@@ -12,5 +12,5 @@ public class TotalResponse {
     private Set<String> keys;
     private int rowCount;
     private int requestedHours;
-    private Map<String, List<Pair<Object,Object>>> data;
+    private Map<String, List<Pair>> data;
 }

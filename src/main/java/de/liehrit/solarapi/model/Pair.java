@@ -1,15 +1,14 @@
 package de.liehrit.solarapi.model;
 
-import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class Pair <T,G> {
-    private T key;
-    private G value;
+public class Pair {
+    private Long timestamp;
+    private Double value;
 
-    public Pair(T key, G value) {
-        this.key = key;
+    public Pair(Long timestamp, Double value) {
+        this.timestamp = timestamp;
         this.value = value;
     }
 }

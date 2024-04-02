@@ -5,6 +5,10 @@ import de.liehrit.solarapi.components.InfluxClient;
 import de.liehrit.solarapi.model.Pair;
 import de.liehrit.solarapi.model.TotalResponse;
 import lombok.val;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Instant;
+import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.util.*;
 
 @RestController
@@ -59,12 +62,12 @@ public class EnergyController {
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
         }
 
-        if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Influxdb result is null");
 
-        val data = new HashMap<String, List<Pair<Object,Object>>>();
+        val data = new HashMap<String, List<Pair>>();
         var rowCount = 0;
 
         for(val table:result) {
@@ -72,12 +75,14 @@ public class EnergyController {
                 val values = record.getValues();
 
                 val field = (String)values.get("_field");
-                val value = values.get("_value");
-                val time = values.get("_time");
+                val value = (Double)values.get("_value");
+                val time = (java.time.Instant)values.get("_time");
+
+                val timestamp = (new DateTime(time.toEpochMilli(), DateTimeZone.UTC)).getMillis();
 
                 val list = data.computeIfAbsent(field, k -> new ArrayList<>());
 
-                list.add(new Pair<>(time, value));
+                list.add(new Pair(timestamp, value));
 
                 rowCount++;
             }

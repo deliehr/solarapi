@@ -131,9 +131,6 @@ public class MqttListener implements MqttCallback, ApplicationListener<Applicati
 
         logger.debug("messageContent arrived: {}", messageContent);
 
-
-        //val timeZone = TimeZone.getTimeZone("Europe/Berlin");
-        //val timestamp = (new LocalDateTime()).toDateTime(DateTimeZone.forTimeZone(timeZone)).getMillis();
         val timestamp = new DateTime().getMillis();
 
         if(message.isRetained()) {
