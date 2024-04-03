@@ -54,22 +54,19 @@ public class EnergyController {
     public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours,
                                             @RequestParam Optional<String> fieldFilter,
                                             @RequestParam Optional<Integer> aggregateMinutes) {
-        // calculate result
-
-        List<FluxTable> result = null;
 
         val hoursValue = Math.max(1, Math.abs(hours.orElseGet(() -> 24)));
         val hoursStringValue = String.valueOf(hoursValue);
 
         try {
-            result = influxClient.readTotals(hoursStringValue, fieldFilter, aggregateMinutes);
+            val result = influxClient.readTotals(hoursStringValue, fieldFilter, aggregateMinutes);
+
+            return buildResponse(result).requestedHours(hoursValue).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
         }
-
-        return buildResponse(result).requestedHours(hoursValue).build();
     }
 
     @GetMapping("/total/range")
@@ -77,17 +74,15 @@ public class EnergyController {
                                             @RequestParam long end,
                                             @RequestParam Optional<String> fieldFilter,
                                             @RequestParam Optional<Integer> aggregateMinutes) {
-        List<FluxTable> result = null;
-
         try {
-            result = influxClient.readTotalsRange(start, end, fieldFilter, aggregateMinutes);
+            val result = influxClient.readTotalsRange(start, end, fieldFilter, aggregateMinutes);
+
+            return buildResponse(result).requestedHours(null).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
         }
-
-        return buildResponse(result).requestedHours(null).build();
     }
 
     private TotalResponse.TotalResponseBuilder buildResponse(List<FluxTable> result) throws ResponseStatusException {
