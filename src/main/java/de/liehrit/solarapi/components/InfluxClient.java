@@ -61,23 +61,25 @@ public class InfluxClient {
 
     @Nullable
     public List<FluxTable> readTotals(String hours, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
-        if(!influxDBClient.ping()) {
-            // TODO: log error
-            logger.error("influx client did not pong");
-            return null;
-        }
+        String query = String.format("from(bucket: \"%s\")\n", BUCKET) +
+                String.format("|> range(start: -%sh)\n", hours) +
+                "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
+                createDefaultQueryAppendix(fieldFilter, aggregateMinutes);
 
-        val api = influxDBClient.getQueryApi();
+        return queryResult(query);
+    }
 
+    public List<FluxTable> readTotalsRange(long start, long end, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
+        String query = String.format("from(bucket: \"%s\")\n", BUCKET) +
+                String.format("|> range(start: %d, stop: %d)\n", start, end) +
+                "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
+                createDefaultQueryAppendix(fieldFilter, aggregateMinutes);
+
+        return queryResult(query);
+    }
+
+    private String createDefaultQueryAppendix(Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
         val queryBuilder = new StringBuilder();
-
-        val fromLine = String.format("from(bucket: \"%s\")\n", BUCKET);
-        val rangeLine = String.format("|> range(start: -%sh)\n", hours);
-        val measurementLine = "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n";
-
-        queryBuilder.append(fromLine);
-        queryBuilder.append(rangeLine);
-        queryBuilder.append(measurementLine);
 
         if(fieldFilter.isPresent() && !fieldFilter.get().isEmpty()) {
             val fields = fieldFilter.get().split(",");
@@ -107,11 +109,18 @@ public class InfluxClient {
             queryBuilder.append(String.format("|> aggregateWindow(every: %dm, fn: mean, createEmpty: false)\n|> yield(name: \"mean\")", minutes));
         }
 
-        val result = api.query(queryBuilder.toString());
+        return queryBuilder.toString();
+    }
 
-        logger.debug("result: {}", result);
+    private List<FluxTable> queryResult(String query) {
+        if(!influxDBClient.ping()) {
+            // TODO: log error
+            logger.error("influx client did not pong");
+            return null;
+        }
 
-        return result;
+        val api = influxDBClient.getQueryApi();
+        return api.query(query);
     }
 
     @PreDestroy

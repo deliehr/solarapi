@@ -2,6 +2,8 @@ package de.liehrit.solarapi.model;
 
 import lombok.Builder;
 import lombok.Data;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +13,9 @@ import java.util.Set;
 public class TotalResponse {
     private Set<String> keys;
     private int rowCount;
-    private int requestedHours;
+
+    @Nullable
+    private Integer requestedHours;
+
     private Map<String, List<Pair>> data;
 }

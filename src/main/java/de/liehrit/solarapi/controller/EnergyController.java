@@ -69,9 +69,29 @@ public class EnergyController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
         }
 
-        if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Influxdb result is null");
+        return buildResponse(result).requestedHours(hoursValue).build();
+    }
 
-        // build response
+    @GetMapping("/total/range")
+    public TotalResponse getRangeTotalRecords(@RequestParam long start,
+                                            @RequestParam long end,
+                                            @RequestParam Optional<String> fieldFilter,
+                                            @RequestParam Optional<Integer> aggregateMinutes) {
+        List<FluxTable> result = null;
+
+        try {
+            result = influxClient.readTotalsRange(start, end, fieldFilter, aggregateMinutes);
+        } catch (Exception e) {
+            logger.error(e.getLocalizedMessage());
+
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
+        }
+
+        return buildResponse(result).requestedHours(null).build();
+    }
+
+    private TotalResponse.TotalResponseBuilder buildResponse(List<FluxTable> result) throws ResponseStatusException {
+        if(result == null) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Influxdb result is null");
 
         val data = new HashMap<String, List<Pair>>();
         var rowCount = 0;
@@ -96,9 +116,7 @@ public class EnergyController {
 
         return TotalResponse.builder()
                 .keys(data.keySet())
-                .requestedHours(hoursValue)
                 .rowCount(rowCount)
-                .data(data)
-                .build();
+                .data(data);
     }
 }
