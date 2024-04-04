@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping(path = "/energy", produces = "application/json")
@@ -49,17 +51,30 @@ public class EnergyController {
     }
 
     @GetMapping("/total")
-    public TotalResponse getAllTotalRecords(@RequestParam Optional<Integer> hours,
+    public TotalResponse getAllTotalRecords(@RequestParam Optional<String> rangeStart,
                                             @RequestParam Optional<String> fieldFilter,
                                             @RequestParam Optional<Integer> aggregateMinutes) {
 
-        val hoursValue = Math.max(1, Math.abs(hours.orElseGet(() -> 24)));
-        val hoursStringValue = String.valueOf(hoursValue);
+        var rangeStartValue = "1m";
+
+        if(rangeStart.isPresent() && !rangeStart.get().isEmpty()) {
+            val rangeStartInput = rangeStart.get().trim();
+
+            String regex = "^[0-9]{1,2}[dhm]$";       // ^[0-9]{1,2}[dhm]$
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(rangeStartInput);
+
+            if(matcher.matches()) {
+                rangeStartValue = rangeStartInput;
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rangeStart does not match criteria");
+            }
+        }
 
         try {
-            val result = influxClient.readTotals(hoursStringValue, fieldFilter, aggregateMinutes);
+            val result = influxClient.readTotals(rangeStartValue, fieldFilter, aggregateMinutes);
 
-            return buildResponse(result).requestedHours(hoursValue).build();
+            return buildResponse(result).requestedRange(rangeStartValue).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
@@ -75,7 +90,7 @@ public class EnergyController {
         try {
             val result = influxClient.readTotalsRange(start, end, fieldFilter, aggregateMinutes);
 
-            return buildResponse(result).requestedHours(null).build();
+            return buildResponse(result).requestedRange(null).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 

@@ -60,9 +60,9 @@ public class InfluxClient {
     }
 
     @Nullable
-    public List<FluxTable> readTotals(String hours, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
+    public List<FluxTable> readTotals(String rangeStart, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
         String query = String.format("from(bucket: \"%s\")\n", BUCKET) +
-                String.format("|> range(start: -%sh)\n", hours) +
+                String.format("|> range(start: -%s)\n", rangeStart) +
                 "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
                 createDefaultQueryAppendix(fieldFilter, aggregateMinutes);
 

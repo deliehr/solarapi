@@ -15,7 +15,7 @@ public class TotalResponse {
     private int rowCount;
 
     @Nullable
-    private Integer requestedHours;
+    private String requestedRange;
 
     private Map<String, List<Pair>> data;
 }
