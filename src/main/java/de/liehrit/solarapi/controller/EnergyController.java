@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @RestController
-@RequestMapping(path = "/energy", produces = "application/json")
+@RequestMapping(path = "/api/v1/energy", produces = "application/json")
 public class EnergyController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final InfluxClient influxClient;

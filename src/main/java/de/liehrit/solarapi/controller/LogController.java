@@ -11,14 +11,12 @@ import org.springframework.beans.factory.InjectionPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "/logs", produces = "application/json")
+@RequestMapping(path = "/api/v1/logs", produces = "application/json")
 public class LogController {
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final LogRepository logRepository;

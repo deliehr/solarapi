@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Set;
 
 @RestController
-@RequestMapping(path = "/time", produces = "application/json")
+@RequestMapping(path = "/api/v1/time", produces = "application/json")
 public class TimeController {
     @GetMapping("/timezones")
     public Set<String> getTimeZones() {
