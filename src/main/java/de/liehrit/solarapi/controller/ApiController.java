@@ -36,4 +36,9 @@ public class ApiController {
 
         return map;
     }
+
+    @GetMapping(value = "/ping", produces="text/plain")
+    public String getPong() {
+        return "pong";
+    }
 }

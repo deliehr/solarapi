@@ -1,10 +1,11 @@
 package de.liehrit.solarapi.components;
 
 import com.influxdb.query.FluxTable;
-import de.liehrit.solarapi.model.Pair;
+import de.liehrit.solarapi.model.AggregateFunction;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
+import de.liehrit.solarapi.model.Helper;
 import jakarta.annotation.PreDestroy;
 import lombok.val;
 import org.jetbrains.annotations.Nullable;
@@ -13,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -60,25 +60,25 @@ public class InfluxClient {
     }
 
     @Nullable
-    public List<FluxTable> readTotals(String rangeStart, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
+    public List<FluxTable> readTotals(String rangeStart, Optional<String> fieldFilter, Optional<String> aggregation, Optional<AggregateFunction> aggregateFunction) {
         String query = String.format("from(bucket: \"%s\")\n", BUCKET) +
                 String.format("|> range(start: -%s)\n", rangeStart) +
                 "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
-                createDefaultQueryAppendix(fieldFilter, aggregateMinutes);
+                createDefaultQueryAppendix(fieldFilter, aggregation, aggregateFunction);
 
         return queryResult(query);
     }
 
-    public List<FluxTable> readTotalsRange(long start, long end, Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
+    public List<FluxTable> readTotalsRange(long start, long end, Optional<String> fieldFilter, Optional<String> aggregation, Optional<AggregateFunction> aggregateFunction) {
         String query = String.format("from(bucket: \"%s\")\n", BUCKET) +
                 String.format("|> range(start: %d, stop: %d)\n", start, end) +
                 "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
-                createDefaultQueryAppendix(fieldFilter, aggregateMinutes);
+                createDefaultQueryAppendix(fieldFilter, aggregation, aggregateFunction);
 
         return queryResult(query);
     }
 
-    private String createDefaultQueryAppendix(Optional<String> fieldFilter, Optional<Integer> aggregateMinutes) {
+    private String createDefaultQueryAppendix(Optional<String> fieldFilter, Optional<String> aggregation, Optional<AggregateFunction> aggregateFunction) {
         val queryBuilder = new StringBuilder();
 
         if(fieldFilter.isPresent() && !fieldFilter.get().isEmpty()) {
@@ -103,10 +103,14 @@ public class InfluxClient {
             }
         }
 
-        if(aggregateMinutes.isPresent()) {
-            val minutes = Math.min(10, Math.max(1, Math.abs(aggregateMinutes.get())));
+        if(Helper.isTimeRangeStringValid(aggregation)) {
+            val aggregationValue = aggregation.get();
 
-            queryBuilder.append(String.format("|> aggregateWindow(every: %dm, fn: mean, createEmpty: false)\n|> yield(name: \"mean\")", minutes));
+            var function = "mean";
+
+            if(aggregateFunction.isPresent()) function = aggregateFunction.get().name();
+
+            queryBuilder.append(String.format("|> aggregateWindow(every: %s, fn: %s, createEmpty: false)\n|> yield(name: \"%s\")", aggregationValue, function, function));
         }
 
         return queryBuilder.toString();

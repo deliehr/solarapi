@@ -2,8 +2,7 @@ package de.liehrit.solarapi.controller;
 
 import com.influxdb.query.FluxTable;
 import de.liehrit.solarapi.components.InfluxClient;
-import de.liehrit.solarapi.model.Pair;
-import de.liehrit.solarapi.model.TotalResponse;
+import de.liehrit.solarapi.model.*;
 import lombok.val;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -15,9 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping(path = "/api/v1/energy", produces = "application/json")
@@ -53,28 +51,31 @@ public class EnergyController {
     @GetMapping("/total")
     public TotalResponse getAllTotalRecords(@RequestParam Optional<String> rangeStart,
                                             @RequestParam Optional<String> fieldFilter,
-                                            @RequestParam Optional<Integer> aggregateMinutes) {
+                                            @RequestParam Optional<String> aggregation,
+                                            @RequestParam Optional<AggregateFunction> aggregationMethod) {
 
         var rangeStartValue = "1m";
 
-        if(rangeStart.isPresent() && !rangeStart.get().isEmpty()) {
-            val rangeStartInput = rangeStart.get().trim();
-
-            String regex = "^[0-9]{1,2}[dhm]$";       // ^[0-9]{1,2}[dhm]$
-            Pattern pattern = Pattern.compile(regex);
-            Matcher matcher = pattern.matcher(rangeStartInput);
-
-            if(matcher.matches()) {
-                rangeStartValue = rangeStartInput;
-            } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rangeStart does not match criteria");
-            }
-        }
+        if(Helper.isTimeRangeStringValid(rangeStart)) rangeStartValue = rangeStart.get().trim();
 
         try {
-            val result = influxClient.readTotals(rangeStartValue, fieldFilter, aggregateMinutes);
+            val result = influxClient.readTotals(rangeStartValue, fieldFilter, aggregation, aggregationMethod);
 
-            return buildResponse(result).requestedRange(rangeStartValue).build();
+            String method = "mean";
+            if(aggregationMethod.isPresent()) {
+                method = aggregationMethod.get().name();
+            }
+
+            if(aggregation.isEmpty()) method = null;
+
+            val valuesUsed = TotalResponseValuesUsed.builder()
+                    .fields(fieldFilter.orElse(null))
+                    .timeRange(rangeStart.orElse(rangeStartValue))
+                    .aggregation(aggregation.orElse(null))
+                    .aggregationMethod(method)
+                    .build();
+
+            return buildResponse(result).valuesUsed(valuesUsed).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
@@ -86,11 +87,24 @@ public class EnergyController {
     public TotalResponse getRangeTotalRecords(@RequestParam long start,
                                             @RequestParam long end,
                                             @RequestParam Optional<String> fieldFilter,
-                                            @RequestParam Optional<Integer> aggregateMinutes) {
+                                            @RequestParam Optional<String> aggregation,
+                                            @RequestParam Optional<AggregateFunction> aggregationMethod) {
         try {
-            val result = influxClient.readTotalsRange(start, end, fieldFilter, aggregateMinutes);
+            val result = influxClient.readTotalsRange(start, end, fieldFilter, aggregation, aggregationMethod);
 
-            return buildResponse(result).requestedRange(null).build();
+            String method = "mean";
+            if(aggregationMethod.isPresent()) {
+                method = aggregationMethod.get().name();
+            }
+
+            val valuesUsed = TotalResponseValuesUsed.builder()
+                    .fields(fieldFilter.orElse(null))
+                    .timeRange(null)
+                    .aggregation(aggregation.orElse(null))
+                    .aggregationMethod(method)
+                    .build();
+
+            return buildResponse(result).valuesUsed(valuesUsed).build();
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
 
