@@ -35,6 +35,29 @@ public class InfluxClient {
         api.writePoint(point);
     }
 
+    public FluxTable getLastValue(Optional<String> fieldFilter)  {
+        if(!influxDBClient.ping()) {
+            // TODO: log error
+            logger.error("influx client did not pong");
+            return null;
+        }
+
+        val query = String.format("from(bucket: \"%s\")\n", BUCKET) +
+                "|> range(start: 0)\n" +
+                "|> filter(fn: (r) => r[\"_measurement\"] == \"total\")\n" +
+                createDefaultQueryAppendix(fieldFilter, Optional.empty(), Optional.empty()) +
+                "|> last()";
+
+        val api = influxDBClient.getQueryApi();
+        val result = api.query(query);
+
+        if(!result.isEmpty()) {
+            return result.get(0);
+        }
+
+        return null;
+    }
+
     @Nullable
     public FluxTable readTotalFields() {
         if(!influxDBClient.ping()) {
@@ -78,7 +101,10 @@ public class InfluxClient {
         return queryResult(query);
     }
 
-    private String createDefaultQueryAppendix(Optional<String> fieldFilter, Optional<String> aggregation, Optional<AggregateFunction> aggregateFunction) {
+    private String createDefaultQueryAppendix(Optional<String> fieldFilter,
+                                              Optional<String> aggregation,
+                                              Optional<AggregateFunction> aggregateFunction) {
+
         val queryBuilder = new StringBuilder();
 
         if(fieldFilter.isPresent() && !fieldFilter.get().isEmpty()) {

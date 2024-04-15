@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.*;
 
 @RestController
@@ -48,8 +49,8 @@ public class EnergyController {
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find any field names.");
     }
 
-    @GetMapping("/total")
-    public TotalResponse getAllTotalRecords(@RequestParam Optional<String> rangeStart,
+    @GetMapping("/total/range")
+    public TotalResponse getRangeTotalRecords(@RequestParam Optional<String> rangeStart,
                                             @RequestParam Optional<String> fieldFilter,
                                             @RequestParam Optional<String> aggregation,
                                             @RequestParam Optional<AggregateFunction> aggregationMethod) {
@@ -83,7 +84,7 @@ public class EnergyController {
         }
     }
 
-    @GetMapping("/total/range")
+    @GetMapping("/total/period")
     public TotalResponse getRangeTotalRecords(@RequestParam long start,
                                             @RequestParam long end,
                                             @RequestParam Optional<String> fieldFilter,
@@ -110,6 +111,26 @@ public class EnergyController {
 
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getLocalizedMessage(), e);
         }
+    }
+
+    @GetMapping(path="/total/lastValue")
+    public TotalResponse getLastValue(@RequestParam Optional<String> fieldFilter) {
+        val result = influxClient.getLastValue(fieldFilter);
+
+        if(result != null) {
+            val resultList = List.of(result);
+
+            val valuesUsed = TotalResponseValuesUsed.builder()
+                    .fields(fieldFilter.orElse(null))
+                    .timeRange(null)
+                    .aggregation(null)
+                    .aggregationMethod(null)
+                    .build();
+
+            return buildResponse(resultList).valuesUsed(valuesUsed).build();
+        }
+
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find the first day");
     }
 
     private TotalResponse.TotalResponseBuilder buildResponse(List<FluxTable> result) throws ResponseStatusException {
