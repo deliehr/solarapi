@@ -35,7 +35,7 @@ public class InfluxClient {
         api.writePoint(point);
     }
 
-    public FluxTable getLastValue(Optional<String> fieldFilter)  {
+    public List<FluxTable> getLastValue(Optional<String> fieldFilter)  {
         if(!influxDBClient.ping()) {
             // TODO: log error
             logger.error("influx client did not pong");
@@ -51,11 +51,7 @@ public class InfluxClient {
         val api = influxDBClient.getQueryApi();
         val result = api.query(query);
 
-        if(!result.isEmpty()) {
-            return result.get(0);
-        }
-
-        return null;
+        return result;
     }
 
     @Nullable

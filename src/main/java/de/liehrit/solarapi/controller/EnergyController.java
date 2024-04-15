@@ -118,8 +118,6 @@ public class EnergyController {
         val result = influxClient.getLastValue(fieldFilter);
 
         if(result != null) {
-            val resultList = List.of(result);
-
             val valuesUsed = TotalResponseValuesUsed.builder()
                     .fields(fieldFilter.orElse(null))
                     .timeRange(null)
@@ -127,7 +125,7 @@ public class EnergyController {
                     .aggregationMethod(null)
                     .build();
 
-            return buildResponse(resultList).valuesUsed(valuesUsed).build();
+            return buildResponse(result).valuesUsed(valuesUsed).build();
         }
 
         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not find the first day");
