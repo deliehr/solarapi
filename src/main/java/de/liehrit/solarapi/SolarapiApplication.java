@@ -1,25 +1,10 @@
 package de.liehrit.solarapi;
 
-import com.google.gson.Gson;
-import jakarta.annotation.PostConstruct;
-import lombok.val;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.env.AbstractEnvironment;
-import org.springframework.core.env.EnumerablePropertySource;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.MutablePropertySources;
-
-import java.io.FileReader;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.stream.StreamSupport;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.io.ClassPathResource;
 
 @SpringBootApplication
 public class SolarapiApplication {
@@ -27,8 +12,13 @@ public class SolarapiApplication {
 		SpringApplication.run(SolarapiApplication.class, args);
 	}
 
-	public static Model getPomModel() throws Exception {
-		MavenXpp3Reader reader = new MavenXpp3Reader();
-		return reader.read(new FileReader("pom.xml"));
+	@Bean
+	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+		PropertySourcesPlaceholderConfigurer propsConfig
+				= new PropertySourcesPlaceholderConfigurer();
+		propsConfig.setLocation(new ClassPathResource("git.properties"));
+		propsConfig.setIgnoreResourceNotFound(true);
+		propsConfig.setIgnoreUnresolvablePlaceholders(true);
+		return propsConfig;
 	}
 }

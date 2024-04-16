@@ -1,13 +1,8 @@
 package de.liehrit.solarapi.components;
 
-import com.google.gson.JsonSyntaxException;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.exceptions.InfluxException;
-import de.liehrit.solarapi.model.FieldConfiguration;
-import de.liehrit.solarapi.model.LogMessage;
-import de.liehrit.solarapi.repositories.LogRepository;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.val;
 import org.eclipse.paho.mqttv5.client.*;
@@ -16,19 +11,12 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.TimeZone;
 import java.util.UUID;
 
 @Component(value="mycomponent")
@@ -38,23 +26,20 @@ public class MqttListener implements MqttCallback, ApplicationListener<Applicati
     private final String MQTT_PASSWORD;
     private final String MQTT_CLIENTID;
     private final String SUBSCRIPTION_TOPIC;
-    private final String INVERTER;
+    //private final String INVERTER;
     final private InfluxClient influxClient;
     private MqttAsyncClient client;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final LogRepository logRepository;
-
-    public MqttListener(Environment environment, InfluxClient influxClient, LogRepository logRepository) throws Exception {
+    public MqttListener(Environment environment, InfluxClient influxClient) throws Exception {
         this.influxClient = influxClient;
-        this.logRepository = logRepository;
 
         MQTT_HOST = environment.getRequiredProperty("MQTT.HOST");
         MQTT_USERNAME = environment.getRequiredProperty("MQTT.USERNAME");
         MQTT_PASSWORD = environment.getRequiredProperty("MQTT.PASSWORD");
         MQTT_CLIENTID = environment.getRequiredProperty("MQTT.CLIENTID");
         SUBSCRIPTION_TOPIC = environment.getRequiredProperty("MQTT.TOPIC");
-        INVERTER = environment.getRequiredProperty("SOLAR.INVERTER");
+        //INVERTER = environment.getRequiredProperty("SOLAR.INVERTER");
     }
 
     @Override
@@ -136,13 +121,6 @@ public class MqttListener implements MqttCallback, ApplicationListener<Applicati
         if(message.isRetained()) {
             logger.debug("message is retained, do not proceed");
             return;
-        }
-
-        try {
-            val logMessage = LogMessage.builder().topic(topic).value(messageContent).timestamp(timestamp).build();
-            logRepository.insert(logMessage);
-        } catch (JsonSyntaxException e) {
-            logger.error(e.getLocalizedMessage());
         }
 
         // influx
