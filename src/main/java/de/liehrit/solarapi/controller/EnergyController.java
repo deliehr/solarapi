@@ -85,7 +85,7 @@ public class EnergyController {
     }
 
     @GetMapping("/total/period")
-    public TotalResponse getRangeTotalRecords(@RequestParam long start,
+    public TotalResponse getPeriodTotalRecords(@RequestParam long start,
                                             @RequestParam long end,
                                             @RequestParam Optional<String> fieldFilter,
                                             @RequestParam Optional<String> aggregation,
